@@ -1,0 +1,48 @@
+# Зависимости
+node_modules/
+.pnpm-store/
+
+# Артефакты сборки (собирается: pnpm run build → target/main.js)
+main.js
+target/
+
+# npm-остатки (проект на pnpm)
+package-lock.json
+
+# Заглушка pnpm approve-builds (создаётся автоматически, не конфиг)
+pnpm-workspace.yaml
+
+# Логи пакетных менеджеров
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Тестовые сборки / прочее
+dist/
+build/
+out/
+*.js.map
+
+# Данные плагина Obsidian (пользовательские настройки, появляются в data.json)
+data.json
+
+# Служебное Obsidian / тестовые волты
+.obsidian/
+
+# ОС
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.code-workspace
+
+# Env
+.env
+.env.local

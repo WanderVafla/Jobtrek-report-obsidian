@@ -1,0 +1,17 @@
+{
+  "name": "jobtrek-report",
+  "version": "1.0.0",
+  "description": "Jobtrek evaluations report as an Obsidian tab",
+  "main": "target/main.js",
+  "scripts": {
+    "build": "node esbuild.config.mjs"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "chart.js": "^4.5.1",
+    "esbuild": "^0.28.2",
+    "obsidian": "^1.13.1",
+    "typescript": "^7.0.2"
+  }
+}
