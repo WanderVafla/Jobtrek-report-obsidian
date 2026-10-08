@@ -8,7 +8,8 @@ jobtrek-report-source/
 ├── pdfImport.ts       # evaluation PDF → note: pdf.js text, criteria parser, note builder
 ├── manifest.json      # Obsidian plugin manifest
 ├── styles.css         # report styles (jt-*)
-├── esbuild.config.mjs # bundler config, output target/ (main.js + manifest.json + styles.css)
+├── esbuild.config.mjs # bundler config, output target/ (main.js + manifest.json + styles.css); installs into $OBSIDIAN_VAULT
+├── .env.example       # OBSIDIAN_VAULT template (copy to .env, git-ignored)
 ├── package.json       # deps + build script (pnpm)
 ├── tsconfig.json      # TS config
 ├── pnpm-lock.yaml     # locked deps
