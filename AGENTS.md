@@ -3,8 +3,8 @@
 Obsidian plugin `Jobtrek Report`: timeline + Chart.js charts from vault notes with frontmatter `type: jobtrek-evaluation` and a `| Criterion | Weight | Grade | Category |` table.
 
 - TypeScript, esbuild (bundle → `target/main.js`, copies `manifest.json` + `styles.css` to `target/`), pnpm, Chart.js. Obsidian API is external.
-- UI languages RU/EN/FR (`i18n.ts`); toggle via `languages` action in view header.
-- PDF import (`pdfImport.ts`): Obsidian's bundled pdf.js (`loadPdfJs`) → port of the `jobtrek-eval-to-md` skill's `convert.py` (same regexes, category `RULES`, arithmetic check). Settings: PDF folder (auto-import: folder scan on startup/settings change + `vault.create`), notes folder, auto-import toggle; commands, file-menu item and a view-header button for manual import. Notes carry `source: "[[pdf]]"` for dedup and `check: failed` when the check fails.
+- Sources in `src/` (entry `src/main.ts`). UI languages RU/EN/FR (`src/i18n.ts`); toggle via `languages` action in view header.
+- PDF import (`src/import/parser.ts` + `src/import/importer.ts`): Obsidian's bundled pdf.js (`loadPdfJs`) → port of the `jobtrek-eval-to-md` skill's `convert.py` (same regexes, category `RULES`, arithmetic check). Settings: PDF folder (auto-import: folder scan on startup/settings change + `vault.create`), notes folder, auto-import toggle; commands, file-menu item and a view-header button for manual import. Notes carry `source: "[[pdf]]"` for dedup and `check: failed` when the check fails.
 - Build: `pnpm install && pnpm exec tsc --noEmit && pnpm run build`.
 - Install: set `OBSIDIAN_VAULT` (env or `.env`, see `.env.example`); `pnpm run build` then copies `main.js`, `manifest.json`, `styles.css` to `<vault>/.obsidian/plugins/jobtrek-report/`. Without it, copy `target/` by hand.
 - File structure: see `STRUCTUR.md`.
