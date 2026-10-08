@@ -292,6 +292,7 @@ class ReportView extends ItemView {
 	private charts: Chart[] = [];
 	private plugin: JobtrekReportPlugin;
 	private langAction: HTMLElement | null = null;
+	private importAction: HTMLElement | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: JobtrekReportPlugin) {
 		super(leaf);
@@ -309,6 +310,11 @@ class ReportView extends ItemView {
 	}
 
 	async onOpen() {
+		this.importAction = this.addAction(
+			constants.IMPORT_ICON,
+			this.plugin.getStrings().importAllCommand,
+			() => this.plugin.importAll()
+		);
 		this.langAction = this.addAction(
 			constants.LANG_ACTION_ICON,
 			this.plugin.getStrings().toggleLangTitle,
@@ -331,6 +337,10 @@ class ReportView extends ItemView {
 		if (this.langAction) {
 			this.langAction.setAttribute("aria-label", t.toggleLangTitle);
 			this.langAction.setAttribute("title", t.toggleLangTitle);
+		}
+		if (this.importAction) {
+			this.importAction.setAttribute("aria-label", t.importAllCommand);
+			this.importAction.setAttribute("title", t.importAllCommand);
 		}
 		await this.render();
 	}
