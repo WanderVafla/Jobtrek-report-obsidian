@@ -5,26 +5,15 @@ import {
 	WorkspaceLeaf,
 	debounce,
 } from "obsidian";
-import { Chart, registerables } from "chart.js";
+import type { Chart } from "chart.js";
 import * as constants from "./constants";
 import { Lang, NEXT_LANG, formatDate, getStrings, normalizeLang } from "./i18n";
 import { PdfImporter } from "./import/importer";
-import { aggregate, loadEvaluations } from "./report/data";
-import { gradeBand, scoreBand } from "./report/bands";
+import { gradeBand } from "./report/bands";
+import { categoriesChart, recurringChart, trendChart } from "./report/charts";
+import { aggregate, loadEvaluations, recurringCandidates } from "./report/data";
+import { applyChartDefaults, readThemeColors } from "./report/theme";
 import { DEFAULT_SETTINGS, JobtrekReportSettings, JobtrekSettingTab } from "./settings";
-
-Chart.register(...registerables);
-
-/** Перенос длинного названия проекта по словам: повёрнутая подпись съедает место слева от графика. */
-function wrapLabel(text: string, max = constants.AXIS_LABEL_WRAP_CHARS): string[] {
-	const lines: string[] = [];
-	for (const word of text.split(/\s+/)) {
-		const last = lines[lines.length - 1];
-		if (last && last.length + 1 + word.length <= max) lines[lines.length - 1] = `${last} ${word}`;
-		else lines.push(word);
-	}
-	return lines;
-}
 
 export default class JobtrekReportPlugin extends Plugin {
 	settings: JobtrekReportSettings = DEFAULT_SETTINGS;
@@ -214,18 +203,8 @@ class ReportView extends ItemView {
 			return;
 		}
 
-		const css = getComputedStyle(document.body);
-		const v = (name: string, fb: string) => css.getPropertyValue(name).trim() || fb;
-		const COL = {
-			good: v(constants.CSS_VARS.colorGreen, constants.COLOR_FALLBACKS.good),
-			warn: v(constants.CSS_VARS.colorYellow, constants.COLOR_FALLBACKS.warn),
-			bad: v(constants.CSS_VARS.colorRed, constants.COLOR_FALLBACKS.bad),
-			accent: v(constants.CSS_VARS.accent, constants.COLOR_FALLBACKS.accent),
-		};
-		const muted = v(constants.CSS_VARS.textMuted, constants.COLOR_FALLBACKS.muted);
-		const grid = v(constants.CSS_VARS.border, constants.COLOR_FALLBACKS.grid);
-		Chart.defaults.color = muted;
-		Chart.defaults.font.size = 12;
+		const col = readThemeColors();
+		applyChartDefaults(col);
 
 		// header
 		const head = root.createDiv({ cls: constants.CSS_CLASSES.head });
@@ -254,77 +233,12 @@ class ReportView extends ItemView {
 
 		// chart 1: trend
 		root.createEl("h2", { text: t.trendTitle });
-		const pcts = evals.map((e) => (e.max ? (e.points / e.max) * 100 : 0));
-		const c1 = this.chartBox(root);
-		this.charts.push(
-			new Chart(c1, {
-				type: constants.CHART_TYPE_LINE,
-				data: {
-					labels: evals.map((e) => wrapLabel(e.project)),
-					datasets: [
-						{
-							label: t.trendDatasetLabel,
-							data: pcts,
-							borderColor: COL.accent,
-							backgroundColor: COL.accent,
-							pointBackgroundColor: evals.map((e) => COL[gradeBand(e.grade)]),
-							pointRadius: 6,
-							pointHoverRadius: 8,
-							tension: 0.25,
-							borderWidth: 2,
-						},
-					],
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					plugins: {
-						legend: { display: false },
-						tooltip: { callbacks: { label: (ctx) => `${(ctx.parsed.y ?? 0).toFixed(1)}${constants.PERCENT_SUFFIX}` } },
-					},
-					scales: {
-						y: {
-							min: Math.max(0, Math.floor(Math.min(...pcts) / 5) * 5 - 5),
-							max: Math.min(100, Math.ceil(Math.max(...pcts) / 5) * 5 + 5),
-							grid: { color: grid },
-							ticks: { callback: (val) => `${val}${constants.PERCENT_SUFFIX}` },
-						},
-						x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false } },
-					},
-				},
-			})
-		);
-
-		const { ranked, perProject } = aggregate(evals);
+		this.charts.push(trendChart(root, evals, col, t));
 
 		// chart 2: categories
+		const agg = aggregate(evals);
 		root.createEl("h2", { text: t.categoriesTitle });
-		const c2 = this.chartBox(root, true);
-		this.charts.push(
-			new Chart(c2, {
-				type: constants.CHART_TYPE_BAR,
-				data: {
-					labels: ranked.map((r) => t.catLabels[r.key] ?? r.key),
-					datasets: [
-						{
-							data: ranked.map((r) => Number(r.value.toFixed(2))),
-							backgroundColor: ranked.map((r) => COL[scoreBand(r.value)]),
-							borderRadius: 4,
-						},
-					],
-				},
-				options: {
-					indexAxis: constants.CHART_AXIS_Y,
-					responsive: true,
-					maintainAspectRatio: false,
-					plugins: {
-						legend: { display: false },
-						tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.x}${constants.SCORE_AX_SUFFIX}` } },
-					},
-					scales: { x: { min: 0, max: 6, grid: { color: grid } }, y: { grid: { display: false } } },
-				},
-			})
-		);
+		this.charts.push(categoriesChart(root, agg.ranked, col, t));
 		const legend = root.createDiv({ cls: constants.CSS_CLASSES.legend });
 		for (const [band, text] of t.legendItems) {
 			const s = legend.createSpan();
@@ -333,51 +247,14 @@ class ReportView extends ItemView {
 		}
 
 		// chart 3: recurring weakest categories
-		const names = evals.map((e) => e.project);
-		const candidates = ranked
-			.filter((r) => names.filter((n) => perProject[n][r.key] != null).length >= 3)
-			.slice(0, 4);
+		const candidates = recurringCandidates(evals, agg);
 		if (candidates.length > 0) {
 			root.createEl("h2", { text: t.recurringTitle });
 			root.createEl("p", {
 				cls: constants.CSS_CLASSES.muted,
 				text: t.recurringHint,
 			});
-			const palette = [COL.bad, COL.accent, COL.warn, COL.good];
-			const c3 = this.chartBox(root, true);
-			this.charts.push(
-				new Chart(c3, {
-					type: constants.CHART_TYPE_LINE,
-					data: {
-						labels: names.map((n) => wrapLabel(n)),
-						datasets: candidates.map((c, i) => ({
-							label: t.catLabels[c.key] ?? c.key,
-							data: names.map((n) => perProject[n][c.key] ?? null),
-							borderColor: palette[i],
-							backgroundColor: palette[i],
-							tension: 0.2,
-							spanGaps: true,
-							segment: {
-								borderDash: (ctx) => (ctx.p0.skip || ctx.p1.skip ? [6, 6] : undefined),
-							},
-						})),
-					},
-					options: {
-						responsive: true,
-						maintainAspectRatio: false,
-						plugins: { legend: { position: constants.CHART_LEGEND_POSITION_BOTTOM, labels: { boxWidth: 10, boxHeight: 10 } } },
-						scales: {
-							y: { min: 2, max: 6, grid: { color: grid } },
-							x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false } },
-						},
-					},
-				})
-			);
+			this.charts.push(recurringChart(root, evals, candidates, agg.perProject, col, t));
 		}
-	}
-
-	private chartBox(parent: HTMLElement, tall = false): HTMLCanvasElement {
-		const box = parent.createDiv({ cls: tall ? constants.CSS_CLASSES.chartBoxTall : constants.CSS_CLASSES.chartBox });
-		return box.createEl("canvas");
 	}
 }

@@ -92,3 +92,9 @@ export function aggregate(evals: Evaluation[]): Aggregation {
 		.sort((a, b) => a.value - b.value);
 	return { ranked, perProject };
 }
+
+/** До четырёх самых слабых категорий, которые есть минимум в трёх проектах. */
+export function recurringCandidates(evals: Evaluation[], { ranked, perProject }: Aggregation): RankedCategory[] {
+	const names = evals.map((e) => e.project);
+	return ranked.filter((r) => names.filter((n) => perProject[n][r.key] != null).length >= 3).slice(0, 4);
+}
