@@ -568,7 +568,10 @@ class ReportView extends ItemView {
 							borderColor: palette[i],
 							backgroundColor: palette[i],
 							tension: 0.2,
-							spanGaps: false,
+							spanGaps: true,
+							segment: {
+								borderDash: (ctx) => (ctx.p0.skip || ctx.p1.skip ? [6, 6] : undefined),
+							},
 						})),
 					},
 					options: {

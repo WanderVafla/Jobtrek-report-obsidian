@@ -65,7 +65,7 @@ export const STRINGS: Record<Lang, ReportStrings> = {
 		categoriesTitle: "По категориям: где теряются баллы",
 		recurringTitle: "Что повторяется от проекта к проекту",
 		recurringHint:
-			"Самые слабые категории, которые встречаются минимум в трёх проектах. Разрыв в линии: такого критерия в оценке не было.",
+			"Самые слабые категории, которые встречаются минимум в трёх проектах. Пунктир: в промежуточных оценках такого критерия не было.",
 		trendDatasetLabel: "% от максимума",
 		projectsSuffix: "проектов",
 		catLabels: {
@@ -117,7 +117,7 @@ export const STRINGS: Record<Lang, ReportStrings> = {
 		categoriesTitle: "By category: where points are lost",
 		recurringTitle: "What repeats from project to project",
 		recurringHint:
-			"The weakest categories present in at least three projects. A gap in the line means that criterion was missing from the evaluation.",
+			"The weakest categories present in at least three projects. A dashed segment means that criterion was missing from the evaluations in between.",
 		trendDatasetLabel: "% of maximum",
 		projectsSuffix: "projects",
 		catLabels: {
@@ -169,7 +169,7 @@ export const STRINGS: Record<Lang, ReportStrings> = {
 		categoriesTitle: "Par catégories : où les points sont perdus",
 		recurringTitle: "Ce qui se répète de projet en projet",
 		recurringHint:
-			"Les catégories les plus faibles présentes dans au moins trois projets. Une rupture de ligne signifie que ce critère était absent de l'évaluation.",
+			"Les catégories les plus faibles présentes dans au moins trois projets. Un segment en pointillés signifie que ce critère était absent des évaluations intermédiaires.",
 		trendDatasetLabel: "% du maximum",
 		projectsSuffix: "projets",
 		catLabels: {
