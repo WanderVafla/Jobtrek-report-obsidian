@@ -19,6 +19,17 @@ export const VIEW_ICON = "bar-chart-3";
 export const EVENT_METADATA_CHANGED = "changed";
 export const EVENT_VAULT_DELETE = "delete";
 export const EVENT_CSS_CHANGE = "css-change";
+export const EVENT_VAULT_CREATE = "create";
+export const EVENT_FILE_MENU = "file-menu";
+
+/** Импорт PDF-оценок. */
+export const COMMAND_IMPORT_PDF_ID = "import-jobtrek-pdf";
+export const COMMAND_IMPORT_ALL_ID = "import-all-jobtrek-pdfs";
+export const PDF_EXTENSION = "pdf";
+export const IMPORT_ICON = "file-input";
+export const IMPORT_RETRY_MS = 3000;
+export const RESCAN_DEBOUNCE_MS = 1500;
+export const PDF_FOLDER_PLACEHOLDER = "Apprentissage/Evaluation";
 
 /** Значение frontmatter `type`, по которому находим оценки. */
 export const FRONTMATTER_EVALUATION_TYPE = "jobtrek-evaluation";
@@ -103,6 +114,8 @@ export const CHART_TYPE_BAR = "bar";
 export const CHART_AXIS_Y = "y";
 export const CHART_AXIS_X = "x";
 export const CHART_LEGEND_POSITION_BOTTOM = "bottom";
+/** Максимум символов в строке подписи оси X (длинные названия переносятся). */
+export const AXIS_LABEL_WRAP_CHARS = 16;
 
 /** Формат даты и таблица критериев. */
 export const DATE_ISO_RE = /^(\d{4})-(\d{2})-(\d{2})/;

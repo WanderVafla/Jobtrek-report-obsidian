@@ -1,7 +1,21 @@
-import { ItemView, Plugin, WorkspaceLeaf, debounce } from "obsidian";
+import {
+	App,
+	ItemView,
+	Notice,
+	Plugin,
+	PluginSettingTab,
+	Setting,
+	TAbstractFile,
+	TFile,
+	WorkspaceLeaf,
+	debounce,
+	loadPdfJs,
+	normalizePath,
+} from "obsidian";
 import { Chart, registerables } from "chart.js";
 import * as constants from "./constants";
 import { Lang, NEXT_LANG, formatDate, getStrings, normalizeLang } from "./i18n";
+import { buildNote, extractPdfText, noteFileName, parseEvaluation } from "./pdfImport";
 
 Chart.register(...registerables);
 
@@ -25,14 +39,30 @@ interface Evaluation {
 
 interface JobtrekReportSettings {
 	lang: Lang;
+	/** Папка, за которой следит автоимпорт PDF. Пусто: автоимпорт выключен. */
+	pdfFolder: string;
+	/** Куда класть созданные заметки. Пусто: рядом с PDF. */
+	notesFolder: string;
+	autoImport: boolean;
 }
 
-const DEFAULT_SETTINGS: JobtrekReportSettings = { lang: "ru" };
+const DEFAULT_SETTINGS: JobtrekReportSettings = { lang: "ru", pdfFolder: "", notesFolder: "", autoImport: true };
 
 type Band = "good" | "warn" | "bad";
 
 const gradeBand = (g: number): Band => (g < 4.6 ? "bad" : g < 5.15 ? "warn" : "good");
 const scoreBand = (v: number): Band => (v < 4.3 ? "bad" : v <= 4.8 ? "warn" : "good");
+
+/** Перенос длинного названия проекта по словам: повёрнутая подпись съедает место слева от графика. */
+function wrapLabel(text: string, max = constants.AXIS_LABEL_WRAP_CHARS): string[] {
+	const lines: string[] = [];
+	for (const word of text.split(/\s+/)) {
+		const last = lines[lines.length - 1];
+		if (last && last.length + 1 + word.length <= max) lines[lines.length - 1] = `${last} ${word}`;
+		else lines.push(word);
+	}
+	return lines;
+}
 
 function parseCriteria(text: string): Criterion[] {
 	const out: Criterion[] = [];
@@ -52,6 +82,10 @@ function parseCriteria(text: string): Criterion[] {
 export default class JobtrekReportPlugin extends Plugin {
 	settings: JobtrekReportSettings = DEFAULT_SETTINGS;
 	private ribbonEl: HTMLElement | null = null;
+	/** PDF, которые сейчас импортируются: событие create и сканирование папки не должны создать дубль. */
+	private importing = new Set<string>();
+	/** Пересканировать папку после смены настроек (не на каждый символ в поле ввода). */
+	readonly rescan = debounce(() => void this.scanFolder(), constants.RESCAN_DEBOUNCE_MS, true);
 
 	async onload() {
 		await this.loadSettings();
@@ -66,6 +100,39 @@ export default class JobtrekReportPlugin extends Plugin {
 			name: this.getStrings().commandName,
 			callback: () => this.activateView(),
 		});
+		this.addCommand({
+			id: constants.COMMAND_IMPORT_PDF_ID,
+			name: this.getStrings().importCommand,
+			checkCallback: (checking) => {
+				const file = this.app.workspace.getActiveFile();
+				if (!file || file.extension !== constants.PDF_EXTENSION) return false;
+				if (!checking) void this.importPdf(file, true);
+				return true;
+			},
+		});
+		this.addCommand({
+			id: constants.COMMAND_IMPORT_ALL_ID,
+			name: this.getStrings().importAllCommand,
+			callback: () => this.importAll(),
+		});
+		this.registerEvent(
+			this.app.workspace.on(constants.EVENT_FILE_MENU, (menu, file) => {
+				if (!(file instanceof TFile) || file.extension !== constants.PDF_EXTENSION) return;
+				menu.addItem((item) =>
+					item
+						.setTitle(this.getStrings().menuImport)
+						.setIcon(constants.IMPORT_ICON)
+						.onClick(() => this.importPdf(file, true))
+				);
+			})
+		);
+		// После onLayoutReady, чтобы не ловить "create" для всех файлов при старте.
+		// PDF, которые уже лежат в папке, подхватывает scanFolder.
+		this.app.workspace.onLayoutReady(() => {
+			this.registerEvent(this.app.vault.on(constants.EVENT_VAULT_CREATE, (file) => this.onFileCreated(file)));
+			void this.scanFolder();
+		});
+		this.addSettingTab(new JobtrekSettingTab(this.app, this));
 	}
 
 	onunload() {
@@ -75,8 +142,128 @@ export default class JobtrekReportPlugin extends Plugin {
 	async loadSettings() {
 		const data = await this.loadData();
 		this.settings = {
+			...DEFAULT_SETTINGS,
+			...data,
 			lang: normalizeLang(data?.lang),
 		};
+	}
+
+	async saveSettings() {
+		await this.saveData(this.settings);
+	}
+
+	private inPdfFolder(file: TFile): boolean {
+		const raw = this.settings.pdfFolder.trim();
+		if (!raw) return false;
+		const folder = normalizePath(raw);
+		return folder === "/" || file.path.startsWith(folder + "/");
+	}
+
+	private onFileCreated(file: TAbstractFile) {
+		if (!this.settings.autoImport) return;
+		if (!(file instanceof TFile) || file.extension !== constants.PDF_EXTENSION || !this.inPdfFolder(file)) return;
+		// Синхронизация может создать файл раньше, чем допишет содержимое: одна повторная попытка.
+		void this.importPdf(file, false).catch(() =>
+			window.setTimeout(
+				() => void this.importPdf(file, false).catch((e) => console.error(`Jobtrek: import failed ${file.path}`, e)),
+				constants.IMPORT_RETRY_MS
+			)
+		);
+	}
+
+	/** Уже есть заметка-оценка, чей `source` ссылается на этот PDF. */
+	private isImported(pdf: TFile): boolean {
+		const { metadataCache, vault } = this.app;
+		for (const note of vault.getMarkdownFiles()) {
+			const fm = metadataCache.getFileCache(note)?.frontmatter;
+			if (!fm || fm.type !== constants.FRONTMATTER_EVALUATION_TYPE || typeof fm.source !== "string") continue;
+			const link = fm.source.replace(/^\[\[|\]\]$/g, "").split("|")[0];
+			if (metadataCache.getFirstLinkpathDest(link, note.path) === pdf) return true;
+		}
+		return false;
+	}
+
+	/**
+	 * PDF → заметка-оценка. manual: уведомлять обо всех исходах и открыть заметку.
+	 * В авто-режиме чужие PDF (не оценки) молча пропускаются. Ошибки чтения PDF пробрасываются.
+	 */
+	async importPdf(pdf: TFile, manual: boolean): Promise<TFile | null> {
+		const t = this.getStrings();
+		if (this.importing.has(pdf.path)) return null;
+		if (this.isImported(pdf)) {
+			if (manual) new Notice(`${t.alreadyImported} ${pdf.name}`);
+			return null;
+		}
+		this.importing.add(pdf.path);
+		try {
+			return await this.createNote(pdf, manual);
+		} finally {
+			this.importing.delete(pdf.path);
+		}
+	}
+
+	private async createNote(pdf: TFile, manual: boolean): Promise<TFile | null> {
+		const t = this.getStrings();
+		let text: string;
+		try {
+			text = await extractPdfText(await loadPdfJs(), await this.app.vault.readBinary(pdf));
+		} catch (e) {
+			console.error(`Jobtrek: cannot read PDF ${pdf.path}`, e);
+			if (manual) new Notice(`${t.importError} ${pdf.name}`);
+			throw e;
+		}
+		const ev = parseEvaluation(text);
+		if (ev.criteria.length === 0 && ev.head.max === undefined) {
+			if (manual) new Notice(`${t.notEvaluation} ${pdf.name}`);
+			return null;
+		}
+		const folder = normalizePath(this.settings.notesFolder.trim() || pdf.parent?.path || "/");
+		if (folder !== "/" && !this.app.vault.getAbstractFileByPath(folder)) await this.app.vault.createFolder(folder);
+		const path = normalizePath(`${folder}/${noteFileName(ev, pdf.basename)}`);
+		if (this.app.vault.getAbstractFileByPath(path)) {
+			if (manual) new Notice(`${t.alreadyImported} ${path}`);
+			return null;
+		}
+		const note = await this.app.vault.create(path, buildNote(ev, pdf.basename, `[[${pdf.path}]]`));
+		new Notice(
+			ev.problems.length
+				? `${t.importChecks} ${note.basename}\n${ev.problems.join("\n")}`
+				: `${t.importOk} ${note.basename}`,
+			ev.problems.length ? 0 : undefined
+		);
+		if (manual) await this.app.workspace.getLeaf(constants.NEW_TAB_LEAF_TYPE).openFile(note);
+		return note;
+	}
+
+	/** Команда: импортировать все ещё не импортированные PDF из папки настроек. */
+	async importAll() {
+		const t = this.getStrings();
+		if (!this.settings.pdfFolder.trim()) {
+			new Notice(t.pdfFolderNotSet);
+			return;
+		}
+		new Notice(`${t.importAllDone} ${await this.importFolder()}`);
+	}
+
+	/** Автоимпорт PDF, которые уже лежат в папке (старт плагина, смена настроек). */
+	private async scanFolder() {
+		if (!this.settings.autoImport || !this.settings.pdfFolder.trim()) return;
+		const created = await this.importFolder();
+		if (created > 0) new Notice(`${this.getStrings().importAllDone} ${created}`);
+	}
+
+	private async importFolder(): Promise<number> {
+		const t = this.getStrings();
+		let created = 0;
+		for (const file of this.app.vault.getFiles()) {
+			if (file.extension !== constants.PDF_EXTENSION || !this.inPdfFolder(file)) continue;
+			try {
+				if (await this.importPdf(file, false)) created++;
+			} catch {
+				new Notice(`${t.importError} ${file.name}`);
+			}
+		}
+		return created;
 	}
 
 	getStrings() {
@@ -86,7 +273,7 @@ export default class JobtrekReportPlugin extends Plugin {
 	/** Переключить язык по кругу ru → en → fr и перерисовать все открытые вью. */
 	async setLang(lang: Lang) {
 		this.settings.lang = lang;
-		await this.saveData(this.settings);
+		await this.saveSettings();
 		const t = this.getStrings();
 		if (this.ribbonEl) {
 			this.ribbonEl.setAttribute("aria-label", t.ribbonTooltip);
@@ -116,6 +303,7 @@ class ReportView extends ItemView {
 	private charts: Chart[] = [];
 	private plugin: JobtrekReportPlugin;
 	private langAction: HTMLElement | null = null;
+	private importAction: HTMLElement | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: JobtrekReportPlugin) {
 		super(leaf);
@@ -133,6 +321,11 @@ class ReportView extends ItemView {
 	}
 
 	async onOpen() {
+		this.importAction = this.addAction(
+			constants.IMPORT_ICON,
+			this.plugin.getStrings().importAllCommand,
+			() => this.plugin.importAll()
+		);
 		this.langAction = this.addAction(
 			constants.LANG_ACTION_ICON,
 			this.plugin.getStrings().toggleLangTitle,
@@ -155,6 +348,10 @@ class ReportView extends ItemView {
 		if (this.langAction) {
 			this.langAction.setAttribute("aria-label", t.toggleLangTitle);
 			this.langAction.setAttribute("title", t.toggleLangTitle);
+		}
+		if (this.importAction) {
+			this.importAction.setAttribute("aria-label", t.importAllCommand);
+			this.importAction.setAttribute("title", t.importAllCommand);
 		}
 		await this.render();
 	}
@@ -257,7 +454,7 @@ class ReportView extends ItemView {
 			new Chart(c1, {
 				type: constants.CHART_TYPE_LINE,
 				data: {
-					labels: evals.map((e) => e.project),
+					labels: evals.map((e) => wrapLabel(e.project)),
 					datasets: [
 						{
 							label: t.trendDatasetLabel,
@@ -286,7 +483,7 @@ class ReportView extends ItemView {
 							grid: { color: grid },
 							ticks: { callback: (val) => `${val}${constants.PERCENT_SUFFIX}` },
 						},
-						x: { grid: { display: false } },
+						x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false } },
 					},
 				},
 			})
@@ -364,7 +561,7 @@ class ReportView extends ItemView {
 				new Chart(c3, {
 					type: constants.CHART_TYPE_LINE,
 					data: {
-						labels: names,
+						labels: names.map((n) => wrapLabel(n)),
 						datasets: candidates.map((c, i) => ({
 							label: t.catLabels[c.key] ?? c.key,
 							data: names.map((n) => perProject[n][c.key] ?? null),
@@ -381,7 +578,10 @@ class ReportView extends ItemView {
 						responsive: true,
 						maintainAspectRatio: false,
 						plugins: { legend: { position: constants.CHART_LEGEND_POSITION_BOTTOM, labels: { boxWidth: 10, boxHeight: 10 } } },
-						scales: { y: { min: 2, max: 6, grid: { color: grid } }, x: { grid: { display: false } } },
+						scales: {
+							y: { min: 2, max: 6, grid: { color: grid } },
+							x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false } },
+						},
 					},
 				})
 			);
@@ -391,5 +591,49 @@ class ReportView extends ItemView {
 	private chartBox(parent: HTMLElement, tall = false): HTMLCanvasElement {
 		const box = parent.createDiv({ cls: tall ? constants.CSS_CLASSES.chartBoxTall : constants.CSS_CLASSES.chartBox });
 		return box.createEl("canvas");
+	}
+}
+
+class JobtrekSettingTab extends PluginSettingTab {
+	private plugin: JobtrekReportPlugin;
+
+	constructor(app: App, plugin: JobtrekReportPlugin) {
+		super(app, plugin);
+		this.plugin = plugin;
+	}
+
+	display() {
+		const t = this.plugin.getStrings();
+		const s = this.plugin.settings;
+		this.containerEl.empty();
+		new Setting(this.containerEl)
+			.setName(t.settingPdfFolder)
+			.setDesc(t.settingPdfFolderDesc)
+			.addText((text) =>
+				text.setPlaceholder(constants.PDF_FOLDER_PLACEHOLDER).setValue(s.pdfFolder).onChange(async (v) => {
+					s.pdfFolder = v.trim() ? normalizePath(v.trim()) : "";
+					await this.plugin.saveSettings();
+					this.plugin.rescan();
+				})
+			);
+		new Setting(this.containerEl)
+			.setName(t.settingNotesFolder)
+			.setDesc(t.settingNotesFolderDesc)
+			.addText((text) =>
+				text.setValue(s.notesFolder).onChange(async (v) => {
+					s.notesFolder = v.trim() ? normalizePath(v.trim()) : "";
+					await this.plugin.saveSettings();
+				})
+			);
+		new Setting(this.containerEl)
+			.setName(t.settingAutoImport)
+			.setDesc(t.settingAutoImportDesc)
+			.addToggle((toggle) =>
+				toggle.setValue(s.autoImport).onChange(async (v) => {
+					s.autoImport = v;
+					await this.plugin.saveSettings();
+					this.plugin.rescan();
+				})
+			);
 	}
 }

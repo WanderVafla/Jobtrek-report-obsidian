@@ -1,7 +1,7 @@
 {
   "id": "jobtrek-report",
   "name": "Jobtrek Report",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "minAppVersion": "1.4.0",
   "description": "Builds a report with timeline and charts from your Jobtrek evaluation notes, in a separate tab.",
   "author": "Vladyslav",
