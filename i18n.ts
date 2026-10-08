@@ -33,6 +33,22 @@ export interface ReportStrings {
 	projectsSuffix: string;
 	catLabels: Record<string, string>;
 	legendItems: Array<[string, string]>;
+	importCommand: string;
+	importAllCommand: string;
+	menuImport: string;
+	importOk: string;
+	importChecks: string;
+	alreadyImported: string;
+	notEvaluation: string;
+	importError: string;
+	importAllDone: string;
+	pdfFolderNotSet: string;
+	settingPdfFolder: string;
+	settingPdfFolderDesc: string;
+	settingNotesFolder: string;
+	settingNotesFolderDesc: string;
+	settingAutoImport: string;
+	settingAutoImportDesc: string;
 }
 
 export const STRINGS: Record<Lang, ReportStrings> = {
@@ -71,6 +87,22 @@ export const STRINGS: Record<Lang, ReportStrings> = {
 			["warn", "4.3–4.8 нестабильно"],
 			["good", "> 4.8 стабильно"],
 		],
+		importCommand: "Импортировать PDF оценки (текущий файл)",
+		importAllCommand: "Импортировать все PDF оценки из папки",
+		menuImport: "Импортировать как оценку Jobtrek",
+		importOk: "Оценка импортирована:",
+		importChecks: "Импортировано, но проверка не прошла:",
+		alreadyImported: "Уже импортировано:",
+		notEvaluation: "Это не PDF оценки Jobtrek:",
+		importError: "Не удалось прочитать PDF:",
+		importAllDone: "Создано заметок:",
+		pdfFolderNotSet: "Сначала укажи папку с PDF в настройках плагина.",
+		settingPdfFolder: "Папка с PDF оценками",
+		settingPdfFolderDesc: "PDF в этой папке (и подпапках) импортируются автоматически: уже лежащие при запуске, новые сразу. Пусто: автоимпорт выключен.",
+		settingNotesFolder: "Папка для заметок",
+		settingNotesFolderDesc: "Куда класть созданные заметки. Пусто: рядом с PDF.",
+		settingAutoImport: "Автоимпорт",
+		settingAutoImportDesc: "Создавать заметки для PDF из папки без участия пользователя.",
 	},
 	en: {
 		viewDisplayText: "Jobtrek Report",
@@ -107,6 +139,22 @@ export const STRINGS: Record<Lang, ReportStrings> = {
 			["warn", "4.3–4.8 unstable"],
 			["good", "> 4.8 stable"],
 		],
+		importCommand: "Import evaluation PDF (current file)",
+		importAllCommand: "Import all evaluation PDFs from folder",
+		menuImport: "Import as Jobtrek evaluation",
+		importOk: "Evaluation imported:",
+		importChecks: "Imported, but the check failed:",
+		alreadyImported: "Already imported:",
+		notEvaluation: "Not a Jobtrek evaluation PDF:",
+		importError: "Could not read PDF:",
+		importAllDone: "Notes created:",
+		pdfFolderNotSet: "Set the PDF folder in the plugin settings first.",
+		settingPdfFolder: "Evaluation PDF folder",
+		settingPdfFolderDesc: "PDFs in this folder (and subfolders) are imported automatically: existing ones on startup, new ones right away. Empty: auto-import is off.",
+		settingNotesFolder: "Notes folder",
+		settingNotesFolderDesc: "Where to put created notes. Empty: next to the PDF.",
+		settingAutoImport: "Auto-import",
+		settingAutoImportDesc: "Create notes for PDFs in the folder without any action from you.",
 	},
 	fr: {
 		viewDisplayText: "Rapport Jobtrek",
@@ -143,6 +191,22 @@ export const STRINGS: Record<Lang, ReportStrings> = {
 			["warn", "4,3–4,8 instable"],
 			["good", "> 4,8 stable"],
 		],
+		importCommand: "Importer le PDF d'évaluation (fichier courant)",
+		importAllCommand: "Importer tous les PDF d'évaluation du dossier",
+		menuImport: "Importer comme évaluation Jobtrek",
+		importOk: "Évaluation importée :",
+		importChecks: "Importée, mais la vérification a échoué :",
+		alreadyImported: "Déjà importé :",
+		notEvaluation: "Ce n'est pas un PDF d'évaluation Jobtrek :",
+		importError: "Impossible de lire le PDF :",
+		importAllDone: "Notes créées :",
+		pdfFolderNotSet: "Indique d'abord le dossier des PDF dans les réglages du plugin.",
+		settingPdfFolder: "Dossier des PDF d'évaluation",
+		settingPdfFolderDesc: "Les PDF de ce dossier (et sous-dossiers) sont importés automatiquement : les existants au démarrage, les nouveaux aussitôt. Vide : import automatique désactivé.",
+		settingNotesFolder: "Dossier des notes",
+		settingNotesFolderDesc: "Où placer les notes créées. Vide : à côté du PDF.",
+		settingAutoImport: "Import automatique",
+		settingAutoImportDesc: "Créer les notes pour les PDF du dossier sans action de ta part.",
 	},
 };
 
