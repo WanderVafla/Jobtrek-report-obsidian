@@ -10,5 +10,5 @@
     "lib": ["DOM", "ES2020"],
     "types": []
   },
-  "include": ["main.ts", "constants.ts", "i18n.ts", "pdfImport.ts"]
+  "include": ["src/**/*.ts"]
 }

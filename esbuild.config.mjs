@@ -6,7 +6,7 @@ import { join } from "node:path";
 if (existsSync(".env")) process.loadEnvFile(".env");
 
 await esbuild.build({
-  entryPoints: ["main.ts"],
+  entryPoints: ["src/main.ts"],
   bundle: true,
   external: ["obsidian", "electron", "@codemirror/*", "@lezer/*"],
   format: "cjs",
