@@ -20,20 +20,17 @@ Features:
 ```bash
 pnpm install
 pnpm exec tsc --noEmit   # type check
-pnpm run build            # bundles main.ts → target/main.js
+pnpm run build            # bundles main.ts → target/main.js, copies manifest.json + styles.css
 ```
 
-Build output goes to `target/` (git-ignored). Sources: `main.ts`, `constants.ts`, `i18n.ts`.
+Build output goes to `target/` (git-ignored): `main.js`, `manifest.json`, `styles.css`. Sources: `main.ts`, `constants.ts`, `i18n.ts`.
 
 ## Install into Obsidian
 
 1. Build the project (see above).
 2. Create the plugin folder in your vault:
    `<vault>/.obsidian/plugins/jobtrek-report/`
-3. Copy three files into it:
-   - `target/main.js` → renamed to **`main.js`**
-   - `manifest.json`
-   - `styles.css`
+3. Copy the contents of `target/` into it (`main.js`, `manifest.json`, `styles.css`).
 4. In Obsidian: Settings → Community plugins → Reload → enable **Jobtrek Report**.
 5. Click the bar-chart icon in the left ribbon, or run the command **Open Jobtrek report**.
 
@@ -82,7 +79,7 @@ jobtrek-report-source/
 ├── i18n.ts            # RU/EN/FR strings, date formatting
 ├── manifest.json      # Obsidian plugin manifest
 ├── styles.css         # report styles
-├── esbuild.config.mjs # bundler config (output: target/main.js)
+├── esbuild.config.mjs # bundler config (output: target/ with main.js, manifest.json, styles.css)
 ├── sample-notes/      # example evaluation notes
 └── target/            # build output (git-ignored)
 ```

@@ -1,4 +1,5 @@
 import esbuild from "esbuild";
+import { copyFileSync } from "node:fs";
 
 await esbuild.build({
   entryPoints: ["main.ts"],
@@ -11,3 +12,6 @@ await esbuild.build({
   minify: true,
   outfile: "target/main.js",
 });
+
+copyFileSync("styles.css", "target/styles.css");
+copyFileSync("manifest.json", "target/manifest.json");

@@ -7,7 +7,7 @@ jobtrek-report-source/
 ├── i18n.ts            # RU/EN/FR strings + date formatting
 ├── manifest.json      # Obsidian plugin manifest
 ├── styles.css         # report styles (jt-*)
-├── esbuild.config.mjs # bundler config, output target/main.js
+├── esbuild.config.mjs # bundler config, output target/ (main.js + manifest.json + styles.css)
 ├── package.json       # deps + build script (pnpm)
 ├── tsconfig.json      # TS config
 ├── pnpm-lock.yaml     # locked deps
