@@ -15,7 +15,7 @@ import {
 import { Chart, registerables } from "chart.js";
 import * as constants from "./constants";
 import { Lang, NEXT_LANG, formatDate, getStrings, normalizeLang } from "./i18n";
-import { buildNote, extractPdfText, noteFileName, parseEvaluation } from "./pdfImport";
+import { buildNote, extractPdfText, noteFileName, parseEvaluation } from "./import/parser";
 
 Chart.register(...registerables);
 
