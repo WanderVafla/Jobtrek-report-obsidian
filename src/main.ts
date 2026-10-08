@@ -9,32 +9,11 @@ import { Chart, registerables } from "chart.js";
 import * as constants from "./constants";
 import { Lang, NEXT_LANG, formatDate, getStrings, normalizeLang } from "./i18n";
 import { PdfImporter } from "./import/importer";
+import { aggregate, loadEvaluations } from "./report/data";
+import { gradeBand, scoreBand } from "./report/bands";
 import { DEFAULT_SETTINGS, JobtrekReportSettings, JobtrekSettingTab } from "./settings";
 
 Chart.register(...registerables);
-
-interface Criterion {
-	name: string;
-	weight: number;
-	grade: number;
-	category: string;
-}
-
-interface Evaluation {
-	project: string;
-	date: string;
-	stack: string;
-	grade: number;
-	points: number;
-	max: number;
-	note: string;
-	criteria: Criterion[];
-}
-
-type Band = "good" | "warn" | "bad";
-
-const gradeBand = (g: number): Band => (g < 4.6 ? "bad" : g < 5.15 ? "warn" : "good");
-const scoreBand = (v: number): Band => (v < 4.3 ? "bad" : v <= 4.8 ? "warn" : "good");
 
 /** Перенос длинного названия проекта по словам: повёрнутая подпись съедает место слева от графика. */
 function wrapLabel(text: string, max = constants.AXIS_LABEL_WRAP_CHARS): string[] {
@@ -45,21 +24,6 @@ function wrapLabel(text: string, max = constants.AXIS_LABEL_WRAP_CHARS): string[
 		else lines.push(word);
 	}
 	return lines;
-}
-
-function parseCriteria(text: string): Criterion[] {
-	const out: Criterion[] = [];
-	for (const line of text.split(constants.TABLE_LINE_SEPARATOR)) {
-		const t = line.trim();
-		if (!t.startsWith(constants.TABLE_ROW_PREFIX)) continue;
-		const cells = t.split(constants.TABLE_CELL_SEPARATOR).slice(1, -1).map((c) => c.trim());
-		if (cells.length < 4) continue;
-		const weight = parseFloat(cells[1]);
-		const grade = parseFloat(cells[2]);
-		if (Number.isNaN(weight) || Number.isNaN(grade)) continue;
-		out.push({ name: cells[0], weight, grade, category: cells[3] });
-	}
-	return out;
 }
 
 export default class JobtrekReportPlugin extends Plugin {
@@ -231,30 +195,6 @@ class ReportView extends ItemView {
 		this.charts = [];
 	}
 
-	private async loadEvaluations(): Promise<Evaluation[]> {
-		const list: Evaluation[] = [];
-		for (const file of this.app.vault.getMarkdownFiles()) {
-			const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
-			if (!fm || fm.type !== constants.FRONTMATTER_EVALUATION_TYPE) continue;
-			const criteria = parseCriteria(await this.app.vault.cachedRead(file));
-			const sumW = criteria.reduce((s, c) => s + c.weight, 0);
-			const sumWG = criteria.reduce((s, c) => s + c.weight * c.grade, 0);
-			const max = Number(fm.max) || sumW * 6;
-			const points = Number(fm.points) || sumWG;
-			list.push({
-				project: String(fm.project ?? file.basename),
-				date: String(fm.date ?? ""),
-				stack: String(fm.stack ?? ""),
-				grade: Number(fm.grade) || (max ? (points / max) * 6 : 0),
-				points,
-				max,
-				note: String(fm.note ?? ""),
-				criteria,
-			});
-		}
-		return list.sort((a, b) => a.date.localeCompare(b.date));
-	}
-
 	private async render() {
 		this.destroyCharts();
 		const lang = this.plugin.settings.lang;
@@ -264,7 +204,7 @@ class ReportView extends ItemView {
 		root.empty();
 		root.addClass(constants.CSS_CLASSES.report);
 
-		const evals = await this.loadEvaluations();
+		const evals = await loadEvaluations(this.app);
 		if (evals.length === 0) {
 			root.createEl("h1", { text: t.emptyTitle });
 			root.createEl("p", {
@@ -355,25 +295,7 @@ class ReportView extends ItemView {
 			})
 		);
 
-		// aggregation
-		const overall: Record<string, { wg: number; w: number }> = {};
-		const perProject: Record<string, Record<string, number | null>> = {};
-		for (const e of evals) {
-			const agg: Record<string, { wg: number; w: number }> = {};
-			for (const c of e.criteria) {
-				agg[c.category] ??= { wg: 0, w: 0 };
-				agg[c.category].wg += c.weight * c.grade;
-				agg[c.category].w += c.weight;
-				overall[c.category] ??= { wg: 0, w: 0 };
-				overall[c.category].wg += c.weight * c.grade;
-				overall[c.category].w += c.weight;
-			}
-			perProject[e.project] = {};
-			for (const k of Object.keys(agg)) perProject[e.project][k] = agg[k].wg / agg[k].w;
-		}
-		const ranked = Object.entries(overall)
-			.map(([k, a]) => ({ key: k, value: a.wg / a.w }))
-			.sort((a, b) => a.value - b.value);
+		const { ranked, perProject } = aggregate(evals);
 
 		// chart 2: categories
 		root.createEl("h2", { text: t.categoriesTitle });
