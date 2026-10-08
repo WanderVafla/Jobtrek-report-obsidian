@@ -114,6 +114,8 @@ export const CHART_TYPE_BAR = "bar";
 export const CHART_AXIS_Y = "y";
 export const CHART_AXIS_X = "x";
 export const CHART_LEGEND_POSITION_BOTTOM = "bottom";
+/** Максимум символов в строке подписи оси X (длинные названия переносятся). */
+export const AXIS_LABEL_WRAP_CHARS = 16;
 
 /** Формат даты и таблица критериев. */
 export const DATE_ISO_RE = /^(\d{4})-(\d{2})-(\d{2})/;

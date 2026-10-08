@@ -53,6 +53,17 @@ type Band = "good" | "warn" | "bad";
 const gradeBand = (g: number): Band => (g < 4.6 ? "bad" : g < 5.15 ? "warn" : "good");
 const scoreBand = (v: number): Band => (v < 4.3 ? "bad" : v <= 4.8 ? "warn" : "good");
 
+/** Перенос длинного названия проекта по словам: повёрнутая подпись съедает место слева от графика. */
+function wrapLabel(text: string, max = constants.AXIS_LABEL_WRAP_CHARS): string[] {
+	const lines: string[] = [];
+	for (const word of text.split(/\s+/)) {
+		const last = lines[lines.length - 1];
+		if (last && last.length + 1 + word.length <= max) lines[lines.length - 1] = `${last} ${word}`;
+		else lines.push(word);
+	}
+	return lines;
+}
+
 function parseCriteria(text: string): Criterion[] {
 	const out: Criterion[] = [];
 	for (const line of text.split(constants.TABLE_LINE_SEPARATOR)) {
@@ -443,7 +454,7 @@ class ReportView extends ItemView {
 			new Chart(c1, {
 				type: constants.CHART_TYPE_LINE,
 				data: {
-					labels: evals.map((e) => e.project),
+					labels: evals.map((e) => wrapLabel(e.project)),
 					datasets: [
 						{
 							label: t.trendDatasetLabel,
@@ -472,7 +483,7 @@ class ReportView extends ItemView {
 							grid: { color: grid },
 							ticks: { callback: (val) => `${val}${constants.PERCENT_SUFFIX}` },
 						},
-						x: { grid: { display: false } },
+						x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false } },
 					},
 				},
 			})
@@ -550,7 +561,7 @@ class ReportView extends ItemView {
 				new Chart(c3, {
 					type: constants.CHART_TYPE_LINE,
 					data: {
-						labels: names,
+						labels: names.map((n) => wrapLabel(n)),
 						datasets: candidates.map((c, i) => ({
 							label: t.catLabels[c.key] ?? c.key,
 							data: names.map((n) => perProject[n][c.key] ?? null),
@@ -564,7 +575,10 @@ class ReportView extends ItemView {
 						responsive: true,
 						maintainAspectRatio: false,
 						plugins: { legend: { position: constants.CHART_LEGEND_POSITION_BOTTOM, labels: { boxWidth: 10, boxHeight: 10 } } },
-						scales: { y: { min: 2, max: 6, grid: { color: grid } }, x: { grid: { display: false } } },
+						scales: {
+							y: { min: 2, max: 6, grid: { color: grid } },
+							x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false } },
+						},
 					},
 				})
 			);
