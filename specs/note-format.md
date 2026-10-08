@@ -46,7 +46,8 @@ Fixed set: `parser.ts: CATEGORIES`. Labels: `i18n.ts: catLabels` (×3 languages)
 | `spec` | literal match with brief: required APIs, hooks, CLI flags |
 | `communication` | oral / technical presentation |
 
-Adding a key: add it to `CATEGORIES` and `RULES` in `parser.ts`, and to `catLabels` in `i18n.ts` for ru/en/fr.
+Adding a key: add it to `CATEGORIES` (string array) and `RULES` in `parser.ts`, and to `catLabels` in `i18n.ts` for ru/en/fr. These are the only places that list categories; the charts read keys from the data.
+Existing notes keep their old keys. Re-import skips PDFs that were already imported, so either edit the Category column by hand or delete the note and import again.
 
 ## Example
 ```markdown

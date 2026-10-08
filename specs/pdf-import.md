@@ -1,6 +1,6 @@
 # PDF import
 
-Evaluation PDF → note (format: `specs/note-format.md`). Port of the `convert.py` script from the `jobtrek-eval-to-md` skill; keep the two in sync.
+Evaluation PDF → note (format: `specs/note-format.md`). Port of the `convert.py` script from the `jobtrek-eval-to-md` Claude skill. The skill is outside this repo: update it too if you have it, otherwise ignore it.
 
 ## Files
 - `src/import/parser.ts`: pure, no Obsidian imports. `extractPdfText`, `parseEvaluation`, `categorize`, `buildNote`, `noteFileName`.
@@ -22,7 +22,8 @@ Evaluation PDF → note (format: `specs/note-format.md`). Port of the `convert.p
 - **End of criteria:** `END_MARK`.
 - **Comments:** `Comment:` / `To improve:`.
 - **General comment:** `General comment and suggestions…` / `Commentaire général`.
-- **New template:** extend the regexes at the top of `parser.ts`. Never hand-type tables.
+- **Numbers:** dot decimal only (`NUM`). A template with decimal commas needs `NUM` and `parseFloat` adapted.
+- **New template:** dump a real sample with `extractPdfText` first, then add a detection marker and a row regex at the top of `parser.ts`, plus a branch in `parseEvaluation`. Keep the existing formats passing. Never hand-type tables.
 
 ## Categories
 `RULES`: keyword lists checked against the lowercase criterion name, **first match wins, order matters**. If nothing matches → `unknown`.

@@ -14,7 +14,7 @@
 | `gradeBand(grade /6)` | timeline dot and badge, trend points | < 4.6 | < 5.15 | ≥ 5.15 |
 | `scoreBand(category avg)` | category bars | < 4.3 | ≤ 4.8 | > 4.8 |
 
-The legend texts (`i18n.ts: legendItems`) describe `scoreBand`. Change them together.
+The thresholds live only in `bands.ts` and in the `i18n.ts: legendItems` texts (which describe `scoreBand`; FR uses decimal commas). Change them together.
 
 ## Aggregation (`data.ts: aggregate`)
 - Category score = Σ(weight × grade) / Σweight.
