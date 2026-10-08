@@ -7,6 +7,7 @@ Features:
 - Timeline of all evaluations with grades and percentages.
 - Three Chart.js charts: final grade trend, per-category averages, recurring weakest categories.
 - Auto-refresh when notes change.
+- Import of Jobtrek evaluation PDFs into notes: automatic (watched folder) or manual (command, file menu, header button). Configured in the plugin settings.
 - Three UI languages (RU / EN / FR) with a `languages` button in the top-right of the view header. The choice is saved between restarts.
 
 ## Requirements
@@ -20,10 +21,12 @@ Features:
 ```bash
 pnpm install
 pnpm exec tsc --noEmit   # type check
-pnpm run build            # bundles main.ts → target/main.js, copies manifest.json + styles.css
+pnpm run build            # bundles src/main.ts → target/main.js, copies manifest.json + styles.css
 ```
 
-Build output goes to `target/` (git-ignored): `main.js`, `manifest.json`, `styles.css`. Sources: `main.ts`, `constants.ts`, `i18n.ts`.
+Build output goes to `target/` (git-ignored): `main.js`, `manifest.json`, `styles.css`. Sources: `src/`.
+
+Set `OBSIDIAN_VAULT` in `.env` (see `.env.example`) and the build also installs the plugin into that vault.
 
 ## Install into Obsidian
 
@@ -62,8 +65,6 @@ from the table: `max = Σweight × 6`, `points = Σ(weight × grade)`,
 Category keys: `git`, `commits`, `docs`, `tooling`, `core`, `validation`,
 `architecture`, `ui_ux`, `type_safety`, `security`, `spec`, `communication`.
 
-Ready-made examples live in `sample-notes/` — copy them into your vault (any folder) to try the plugin.
-
 ## Switching language
 
 Click the `languages` icon in the top-right of the report view header.
@@ -72,14 +73,4 @@ It cycles RU → EN → FR. Date format follows the language
 
 ## Project structure
 
-```text
-jobtrek-report-source/
-├── main.ts            # plugin + report view
-├── constants.ts       # technical constants (view ids, CSS, Chart.js, events)
-├── i18n.ts            # RU/EN/FR strings, date formatting
-├── manifest.json      # Obsidian plugin manifest
-├── styles.css         # report styles
-├── esbuild.config.mjs # bundler config (output: target/ with main.js, manifest.json, styles.css)
-├── sample-notes/      # example evaluation notes
-└── target/            # build output (git-ignored)
-```
+See `AGENTS.md` (layout) and `specs/` (detailed behavior).
