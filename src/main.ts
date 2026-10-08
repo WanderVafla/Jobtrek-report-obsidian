@@ -1,9 +1,9 @@
 import { Plugin, TFile } from "obsidian";
 import * as constants from "./constants";
-import { Lang, getStrings, normalizeLang } from "./i18n";
+import { Lang, getStrings } from "./i18n";
 import { PdfImporter } from "./import/importer";
 import { ReportView } from "./report/view";
-import { DEFAULT_SETTINGS, JobtrekReportSettings, JobtrekSettingTab } from "./settings";
+import { DEFAULT_SETTINGS, JobtrekReportSettings, JobtrekSettingTab, normalizeSettings } from "./settings";
 
 export default class JobtrekReportPlugin extends Plugin {
 	settings: JobtrekReportSettings = DEFAULT_SETTINGS;
@@ -63,12 +63,7 @@ export default class JobtrekReportPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		const data = await this.loadData();
-		this.settings = {
-			...DEFAULT_SETTINGS,
-			...data,
-			lang: normalizeLang(data?.lang),
-		};
+		this.settings = normalizeSettings(await this.loadData());
 	}
 
 	async saveSettings() {

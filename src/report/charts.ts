@@ -100,15 +100,14 @@ export function recurringChart(
 	col: ThemeColors,
 	t: ReportStrings
 ): Chart {
-	const names = evals.map((e) => e.project);
 	const palette = [col.bad, col.accent, col.warn, col.good];
 	return new Chart(chartBox(parent, true), {
 		type: constants.CHART_TYPE_LINE,
 		data: {
-			labels: names.map((n) => wrapLabel(n)),
+			labels: evals.map((e) => wrapLabel(e.project)),
 			datasets: candidates.map((c, i) => ({
 				label: t.catLabels[c.key] ?? c.key,
-				data: names.map((n) => perProject[n][c.key] ?? null),
+				data: perProject.map((p) => p[c.key] ?? null),
 				borderColor: palette[i],
 				backgroundColor: palette[i],
 				tension: 0.2,

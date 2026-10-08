@@ -137,7 +137,7 @@ export class ReportView extends ItemView {
 		}
 
 		// chart 3: recurring weakest categories
-		const candidates = recurringCandidates(evals, agg);
+		const candidates = recurringCandidates(agg);
 		if (candidates.length > 0) {
 			root.createEl("h2", { text: t.recurringTitle });
 			root.createEl("p", {

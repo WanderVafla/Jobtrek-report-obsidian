@@ -27,8 +27,8 @@ export interface RankedCategory {
 export interface Aggregation {
 	/** Категории по средневзвешенной оценке, от худшей к лучшей. */
 	ranked: RankedCategory[];
-	/** Средневзвешенная оценка категории в каждом проекте. */
-	perProject: Record<string, Record<string, number | null>>;
+	/** Средневзвешенная оценка категорий для каждой оценки, в том же порядке, что и evals. */
+	perProject: Array<Record<string, number>>;
 }
 
 export function parseCriteria(text: string): Criterion[] {
@@ -73,7 +73,7 @@ export async function loadEvaluations(app: App): Promise<Evaluation[]> {
 
 export function aggregate(evals: Evaluation[]): Aggregation {
 	const overall: Record<string, { wg: number; w: number }> = {};
-	const perProject: Record<string, Record<string, number | null>> = {};
+	const perProject: Array<Record<string, number>> = [];
 	for (const e of evals) {
 		const agg: Record<string, { wg: number; w: number }> = {};
 		for (const c of e.criteria) {
@@ -84,8 +84,9 @@ export function aggregate(evals: Evaluation[]): Aggregation {
 			overall[c.category].wg += c.weight * c.grade;
 			overall[c.category].w += c.weight;
 		}
-		perProject[e.project] = {};
-		for (const k of Object.keys(agg)) perProject[e.project][k] = agg[k].wg / agg[k].w;
+		const scores: Record<string, number> = {};
+		for (const k of Object.keys(agg)) scores[k] = agg[k].wg / agg[k].w;
+		perProject.push(scores);
 	}
 	const ranked = Object.entries(overall)
 		.map(([k, a]) => ({ key: k, value: a.wg / a.w }))
@@ -94,7 +95,6 @@ export function aggregate(evals: Evaluation[]): Aggregation {
 }
 
 /** До четырёх самых слабых категорий, которые есть минимум в трёх проектах. */
-export function recurringCandidates(evals: Evaluation[], { ranked, perProject }: Aggregation): RankedCategory[] {
-	const names = evals.map((e) => e.project);
-	return ranked.filter((r) => names.filter((n) => perProject[n][r.key] != null).length >= 3).slice(0, 4);
+export function recurringCandidates({ ranked, perProject }: Aggregation): RankedCategory[] {
+	return ranked.filter((r) => perProject.filter((p) => p[r.key] != null).length >= 3).slice(0, 4);
 }

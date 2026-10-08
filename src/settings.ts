@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting, normalizePath } from "obsidian";
 import * as constants from "./constants";
-import { Lang } from "./i18n";
+import { Lang, normalizeLang } from "./i18n";
 import type JobtrekReportPlugin from "./main";
 
 export interface JobtrekReportSettings {
@@ -13,6 +13,18 @@ export interface JobtrekReportSettings {
 }
 
 export const DEFAULT_SETTINGS: JobtrekReportSettings = { lang: "ru", pdfFolder: "", notesFolder: "", autoImport: true };
+
+/** data.json → настройки: неизвестные и битые поля заменяются значениями по умолчанию. */
+export function normalizeSettings(data: unknown): JobtrekReportSettings {
+	const d = (data ?? {}) as Partial<Record<keyof JobtrekReportSettings, unknown>>;
+	const str = (v: unknown, fb: string) => (typeof v === "string" ? v : fb);
+	return {
+		lang: normalizeLang(d.lang),
+		pdfFolder: str(d.pdfFolder, DEFAULT_SETTINGS.pdfFolder),
+		notesFolder: str(d.notesFolder, DEFAULT_SETTINGS.notesFolder),
+		autoImport: typeof d.autoImport === "boolean" ? d.autoImport : DEFAULT_SETTINGS.autoImport,
+	};
+}
 
 export class JobtrekSettingTab extends PluginSettingTab {
 	private plugin: JobtrekReportPlugin;
