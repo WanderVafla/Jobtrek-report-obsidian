@@ -33,7 +33,7 @@ export class JobtrekSettingTab extends PluginSettingTab {
 				text.setPlaceholder(constants.PDF_FOLDER_PLACEHOLDER).setValue(s.pdfFolder).onChange(async (v) => {
 					s.pdfFolder = v.trim() ? normalizePath(v.trim()) : "";
 					await this.plugin.saveSettings();
-					this.plugin.rescan();
+					this.plugin.importer.rescan();
 				})
 			);
 		new Setting(this.containerEl)
@@ -52,7 +52,7 @@ export class JobtrekSettingTab extends PluginSettingTab {
 				toggle.setValue(s.autoImport).onChange(async (v) => {
 					s.autoImport = v;
 					await this.plugin.saveSettings();
-					this.plugin.rescan();
+					this.plugin.importer.rescan();
 				})
 			);
 	}
