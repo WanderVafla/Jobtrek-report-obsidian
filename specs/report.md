@@ -27,7 +27,7 @@ The thresholds live only in `bands.ts` and in the `i18n.ts: legendItems` texts (
 |---|---|---|---|
 | 1 | `trendChart` | line | `points/max × 100` per evaluation, point color = `gradeBand`, y auto-range rounded to 5% |
 | 2 | `categoriesChart` | horizontal bar | `ranked`, color = `scoreBand`, x 0–6 |
-| 3 | `recurringChart` | multi-line | `recurringCandidates`, y 2–6. Missing category → `null`, bridged by a dashed line (`spanGaps` + `segment.borderDash`). Hidden if there are no candidates |
+| 3 | `recurringChart` | multi-line | `recurringCandidates`, y 2–6. Missing category → `null`, bridged by a dashed line (`spanGaps` + `segment.borderDash`). Points are ringed like timeline dots (`pointRings` plugin, border gap = `theme.surface`). Hidden if there are no candidates |
 
 - X labels: project names wrapped by `wrapLabel` (`constants.AXIS_LABEL_WRAP_CHARS`) and not rotated. Rotated labels created empty space on the left.
 - Colors: Obsidian CSS variables (`constants.CSS_VARS`) with `COLOR_FALLBACKS`. Palette for chart 3: bad, accent, warn, good.

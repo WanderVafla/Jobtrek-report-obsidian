@@ -59,6 +59,7 @@ export const CSS_VARS = {
 	accent: "--interactive-accent",
 	textMuted: "--text-muted",
 	border: "--background-modifier-border",
+	surface: "--background-secondary",
 } as const;
 
 /** Фолбэки, если CSS-переменная не задана темой. */
@@ -69,6 +70,7 @@ export const COLOR_FALLBACKS = {
 	accent: "#58a6ff",
 	muted: "#8b949e",
 	grid: "rgba(139,148,158,0.2)",
+	surface: "#202020",
 } as const;
 
 /** Типы и опции Chart.js. */
