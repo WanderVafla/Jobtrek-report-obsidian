@@ -33,3 +33,4 @@ styles.css             jt-* classes
 - Don't change behavior beyond the request.
 - `pnpm exec tsc --noEmit` must pass before every commit.
 - When code changes a contract, update the matching spec in the same commit.
+- Every user-visible `feat`/`fix` adds a line under `[Unreleased]` in `CHANGELOG.md` in the same commit (on the feature branch, not separately).
