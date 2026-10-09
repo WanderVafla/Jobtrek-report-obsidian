@@ -10,6 +10,7 @@
 - SemVer `MAJOR.MINOR.PATCH`: feature → minor, fix → patch; lower parts reset to 0.
 - The version is bumped in **both** `manifest.json` and `package.json`, in a separate `chore: bump version to X.Y.Z` commit.
 - GitHub release tag = exact `manifest.json` version, **without `v`** (Obsidian requires this).
+- `CHANGELOG.md` is kept in parallel with development: every user-visible `feat`/`fix` adds a line under `[Unreleased]` in the same commit on its own branch. No separate changelog branches or catch-up commits. On release, rename `[Unreleased]` to the version and update the compare links at the bottom.
 
 ## Build and checks
 ```bash
