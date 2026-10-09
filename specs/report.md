@@ -31,7 +31,7 @@ The thresholds live only in `bands.ts` and in the `i18n.ts: legendItems` texts (
 
 - X labels: project names wrapped by `wrapLabel` (`constants.AXIS_LABEL_WRAP_CHARS`) and not rotated. Rotated labels created empty space on the left.
 - Colors: Obsidian CSS variables (`constants.CSS_VARS`) with `COLOR_FALLBACKS`. Palette for chart 3: bad, accent, warn, good.
-- Box heights: `styles.css` `.jt-chart-box` (280px; `.tall` 380px).
+- Box heights: `styles.css` `.jt-chart-box` (350px; `.tall` 480px).
 
 ## Header actions
 In `view.ts: onOpen`: an import button (`importer.importAll`) and a language toggle (ru→en→fr, `i18n.ts: NEXT_LANG`, saved in settings). The tooltips must be updated in `refreshLanguage`.

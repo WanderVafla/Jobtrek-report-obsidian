@@ -21,8 +21,8 @@
 .jt-tl-grade.bad { color: var(--color-red); background: rgba(var(--color-red-rgb), 0.15); }
 .jt-tl-note { color: var(--text-muted); font-size: 0.88em; margin-top: 4px; }
 
-.jt-chart-box { position: relative; height: 280px; border: 1px solid var(--background-modifier-border); border-radius: 8px; background: var(--background-secondary); padding: 16px; }
-.jt-chart-box.tall { height: 380px; }
+.jt-chart-box { position: relative; height: 350px; border: 1px solid var(--background-modifier-border); border-radius: 8px; background: var(--background-secondary); padding: 16px; }
+.jt-chart-box.tall { height: 480px; }
 .jt-legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 0.82em; color: var(--text-muted); margin-top: 8px; }
 .jt-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .jt-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; box-shadow: none !important; }
