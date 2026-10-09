@@ -1,4 +1,4 @@
-import { Chart, registerables } from "chart.js";
+import { Chart, Plugin, PointElement, registerables } from "chart.js";
 import * as constants from "../constants";
 import { ReportStrings } from "../i18n";
 import { gradeBand, scoreBand } from "./bands";
@@ -22,6 +22,31 @@ function chartBox(parent: HTMLElement, tall = false): HTMLCanvasElement {
 	const box = parent.createDiv({ cls: tall ? constants.CSS_CLASSES.chartBoxTall : constants.CSS_CLASSES.chartBox });
 	return box.createEl("canvas");
 }
+
+/**
+ * Точки как на ленте оценок (.jt-tl-dot): цветная середина, зазор цвета фона (бордер точки)
+ * и внешнее кольцо цвета линии. Пропущенные (null) точки не рисуются.
+ */
+const pointRings: Plugin<"line"> = {
+	id: "jtPointRings",
+	afterDatasetsDraw(chart) {
+		const { ctx } = chart;
+		chart.data.datasets.forEach((ds, i) => {
+			if (!chart.isDatasetVisible(i)) return;
+			for (const el of chart.getDatasetMeta(i).data as PointElement[]) {
+				if (el.skip) continue;
+				const { radius, borderWidth } = el.options;
+				ctx.save();
+				ctx.beginPath();
+				ctx.arc(el.x, el.y, radius + borderWidth / 2 + 1, 0, Math.PI * 2);
+				ctx.lineWidth = 2;
+				ctx.strokeStyle = ds.borderColor as string;
+				ctx.stroke();
+				ctx.restore();
+			}
+		});
+	},
+};
 
 /** График 1: итоговый % от максимума по проектам. */
 export function trendChart(parent: HTMLElement, evals: Evaluation[], col: ThemeColors, t: ReportStrings): Chart {
@@ -110,6 +135,11 @@ export function recurringChart(
 				data: perProject.map((p) => p[c.key] ?? null),
 				borderColor: palette[i],
 				backgroundColor: palette[i],
+				pointRadius: 5.5,
+				pointHoverRadius: 6.5,
+				pointBorderWidth: 3,
+				pointBorderColor: col.surface,
+				pointHoverBorderColor: col.surface,
 				tension: 0.2,
 				spanGaps: true,
 				segment: {
@@ -126,5 +156,6 @@ export function recurringChart(
 				x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false } },
 			},
 		},
+		plugins: [pointRings],
 	});
 }

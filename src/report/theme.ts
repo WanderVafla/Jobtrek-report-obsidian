@@ -8,6 +8,8 @@ export interface ThemeColors {
 	accent: string;
 	muted: string;
 	grid: string;
+	/** Фон блока графика: зазор между точкой и её кольцом. */
+	surface: string;
 }
 
 /** Цвета из CSS-переменных текущей темы Obsidian, с фолбэками. */
@@ -21,6 +23,7 @@ export function readThemeColors(): ThemeColors {
 		accent: v(constants.CSS_VARS.accent, constants.COLOR_FALLBACKS.accent),
 		muted: v(constants.CSS_VARS.textMuted, constants.COLOR_FALLBACKS.muted),
 		grid: v(constants.CSS_VARS.border, constants.COLOR_FALLBACKS.grid),
+		surface: v(constants.CSS_VARS.surface, constants.COLOR_FALLBACKS.surface),
 	};
 }
 
